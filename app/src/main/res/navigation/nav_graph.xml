@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/mainFragment">
+
+    <fragment
+        android:id="@+id/mainFragment"
+        android:name="ru.netoloy.maps.screens.main.MainFragment"
+        android:label="fragment_main"
+        tools:layout="@layout/fragment_main" >
+        <action
+            android:id="@+id/action_mainFragment_to_addFragment"
+            app:destination="@id/addFragment" />
+        <action
+            android:id="@+id/action_mainFragment_to_listMarkFragment"
+            app:destination="@id/listMarkFragment" />
+    </fragment>
+    <dialog
+        android:id="@+id/addFragment"
+        android:name="ru.netoloy.maps.screens.add.AddFragment"
+        android:label="fragment_add"
+        tools:layout="@layout/fragment_add" />
+    <fragment
+        android:id="@+id/listMarkFragment"
+        android:name="ru.netoloy.maps.screens.list.ListMarkFragment"
+        android:label="fragment_list_mark"
+        tools:layout="@layout/fragment_list_mark" />
+</navigation>
