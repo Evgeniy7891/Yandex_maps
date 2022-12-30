@@ -30,7 +30,7 @@ class MainFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-        MapKitFactory.setApiKey("3b29c9f6-b8a8-451f-961c-bebe6041c295")
+        MapKitFactory.setApiKey("")
         MapKitFactory.initialize(requireContext())
     }
 
