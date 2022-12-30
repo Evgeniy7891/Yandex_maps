@@ -70,8 +70,10 @@ class MainFragment : Fragment() {
             viewModel.pointPosition = null
             val current = viewModel.beginPosition
             viewModel.beginPosition = it.geoObject.geometry.getOrNull(0)?.point ?: current
-            findNavController().navigate(R.id.action_mainFragment_to_addFragment)
-            Log.d("TAG", "geoObj")
+            if(findNavController().currentDestination?.id != R.id.addFragment) {
+                findNavController().navigate(R.id.action_mainFragment_to_addFragment)
+                Log.d("TAG", "geoObj")
+            }
             true
         }
         binding.mapView.map.addTapListener(geoObjectTapListener)

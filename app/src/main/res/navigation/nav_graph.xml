@@ -26,5 +26,9 @@
         android:id="@+id/listMarkFragment"
         android:name="ru.netoloy.maps.screens.list.ListMarkFragment"
         android:label="fragment_list_mark"
-        tools:layout="@layout/fragment_list_mark" />
+        tools:layout="@layout/fragment_list_mark" >
+        <action
+            android:id="@+id/action_listMarkFragment_to_addFragment"
+            app:destination="@id/addFragment" />
+    </fragment>
 </navigation>

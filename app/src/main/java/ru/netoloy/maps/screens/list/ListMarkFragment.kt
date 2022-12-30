@@ -37,7 +37,7 @@ class ListMarkFragment : Fragment() {
             override fun onEdit(markMap: MarkMap) {
                 viewModel.pointPosition = markMap
                 viewModel.beginPosition = markMap.point
-                findNavController().navigate(R.id.action_mainFragment_to_addFragment)
+                findNavController().navigate(R.id.action_listMarkFragment_to_addFragment)
             }
 
             override fun onRemove(markMap: MarkMap) {
