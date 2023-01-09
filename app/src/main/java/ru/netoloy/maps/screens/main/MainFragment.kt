@@ -2,6 +2,7 @@ package ru.netoloy.maps.screens.main
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.PointF
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -29,6 +31,8 @@ import com.yandex.mapkit.user_location.UserLocationObjectListener
 import com.yandex.mapkit.user_location.UserLocationView
 import com.yandex.runtime.Error
 import com.yandex.runtime.image.ImageProvider
+import com.yandex.runtime.network.NetworkError
+import com.yandex.runtime.network.RemoteError
 import com.yandex.runtime.ui_view.ViewProvider
 import ru.netoloy.maps.R
 import ru.netoloy.maps.databinding.FragmentMainBinding
@@ -73,16 +77,18 @@ class MainFragment : Fragment(), UserLocationObjectListener, Session.SearchListe
             Animation(Animation.Type.SMOOTH, 10f), null
         )
         requestLocationPermission()
-        var locationMapKit = mapKit.createUserLocationLayer(binding.mapView.mapWindow)
+        locationMapKit = mapKit.createUserLocationLayer(binding.mapView.mapWindow)
         locationMapKit.isVisible = true
         locationMapKit.setObjectListener(this)
         SearchFactory.initialize(requireContext())
         searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED)
         binding.mapView.map.addCameraListener(this)
         binding.searchEdit.setOnEditorActionListener { v, actionId, event ->
-            if(actionId == EditorInfo.IME_ACTION_SEARCH) {
-                sumbitQuery(searchEdit.text.toString())
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                Log.d("TAG", "if sumbit")
+                sumbitQuery(binding.searchEdit.text.toString())
             }
+            false
         }
         viewModel.data.observe(viewLifecycleOwner) {
             binding.mapView.map.mapObjects.clear()
@@ -107,12 +113,13 @@ class MainFragment : Fragment(), UserLocationObjectListener, Session.SearchListe
             }
         }
         geoObjectTapListener = GeoObjectTapListener {
+            Log.d("TAG", "geoObj1 - ${it.isSelected}")
             viewModel.pointPosition = null
             val current = viewModel.beginPosition
             viewModel.beginPosition = it.geoObject.geometry.getOrNull(0)?.point ?: current
             if (findNavController().currentDestination?.id != R.id.addFragment) {
                 findNavController().navigate(R.id.action_mainFragment_to_addFragment)
-                Log.d("TAG", "geoObj")
+                Log.d("TAG", "geoObj2")
             }
             true
         }
@@ -126,14 +133,21 @@ class MainFragment : Fragment(), UserLocationObjectListener, Session.SearchListe
             true
         }
         var probki = mapKit.createTrafficLayer(binding.mapView.mapWindow)
-        var probkiState = false
+        var probkiState = true
+        probki.isTrafficVisible = true
         binding.trafficButton.setOnClickListener {
             when (probkiState) {
                 false -> {
-                    probkiState = true; probki.isTrafficVisible = true; binding.trafficButton.setBackgroundResource(R.drawable.icon_car)
+                    probkiState = true;
+                    probki.isTrafficVisible = true;
+                    binding.trafficButton.setBackgroundResource(R.drawable.icon_car)
+                    Log.d("TAG", "traffis false - $probkiState")
                 }
                 true -> {
-                    probkiState = false; probki.isTrafficVisible = false; binding.trafficButton.setBackgroundResource(R.drawable.ic_off)
+                    probkiState = false;
+                    probki.isTrafficVisible = false;
+                   binding.trafficButton.setBackgroundResource(R.drawable.ic_off)
+                    Log.d("TAG", "traffis true- $probkiState")
                 }
             }
 
@@ -153,6 +167,7 @@ class MainFragment : Fragment(), UserLocationObjectListener, Session.SearchListe
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            Log.d("TAG", "requestLocation")
             ActivityCompat.requestPermissions(
                 requireActivity(),
                 arrayOf(
@@ -185,35 +200,76 @@ class MainFragment : Fragment(), UserLocationObjectListener, Session.SearchListe
     }
 
     override fun onObjectAdded(userLocationView: UserLocationView) {
+        Log.d("TAG", "object Addd")
         locationMapKit.setAnchor(
-            PointF((binding.mapView.width() * 0.5).toFloat(), (binding.mapView.height() * 0.5).toFloat()),
-            PointF((binding.mapView.width() * 0.5).toFloat(), (binding.mapView.height() * 0.83).toFloat()),
+            PointF(
+                (binding.mapView.width() * 0.5).toFloat(),
+                (binding.mapView.height() * 0.5).toFloat()
+            ),
+            PointF(
+                (binding.mapView.width() * 0.5).toFloat(),
+                (binding.mapView.height() * 0.83).toFloat()
+            ),
         )
-        userLocationView.arrow.setIcon(ImageProvider.fromResource(requireContext(), R.drawable.ic_arrow))
+        userLocationView.arrow.setIcon(
+            ImageProvider.fromResource(
+                requireContext(),
+                R.drawable.navigation_arrow_com
+            )
+        )
+        val picIcon = userLocationView.pin.useCompositeIcon()
+        picIcon.setIcon(
+            "icon",
+            ImageProvider.fromResource(requireContext(), R.drawable.circle),
+            IconStyle().setAnchor(PointF(0f, 0f))
+                .setRotationType(RotationType.ROTATE).setZIndex(0f).setScale(1f)
+        )
+        picIcon.setIcon(
+            "pin", ImageProvider.fromResource(requireContext(), R.drawable.nothing),
+            IconStyle().setAnchor(PointF(0.5f, 05f)).setRotationType(RotationType.ROTATE)
+                .setZIndex(1f).setScale(0.5f)
+        )
+        userLocationView.accuracyCircle.fillColor = Color.BLUE and -0x66000001
     }
 
     override fun onObjectRemoved(p0: UserLocationView) {
-        TODO("Not yet implemented")
     }
 
     override fun onObjectUpdated(p0: UserLocationView, p1: ObjectEvent) {
-        TODO("Not yet implemented")
     }
 
-    override fun onSearchResponse(p0: Response) {
-        TODO("Not yet implemented")
+    override fun onSearchResponse(response: Response) {
+        val mapObject: MapObjectCollection = binding.mapView.map.mapObjects
+        mapObject.clear()
+        for (searchResult in response.collection.children) {
+            val resultLocation = searchResult.obj!!.geometry[0].point
+            if (resultLocation != null) {
+                mapObject.addPlacemark(
+                    resultLocation,
+                    ImageProvider.fromResource(requireContext(), R.drawable.circle)
+                )
+            }
+        }
     }
 
     override fun onSearchError(p0: Error) {
-        TODO("Not yet implemented")
+        var errorMessage = "Неизвестная ошибка!"
+        if (p0 is RemoteError) {
+            errorMessage = "Беспроводная ошибка!"
+        } else if (p0 is NetworkError) {
+            errorMessage = "Проблема с интернетом"
+        }
+        Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show()
     }
 
     override fun onCameraPositionChanged(
-        p0: Map,
-        p1: CameraPosition,
-        p2: CameraUpdateReason,
-        p3: Boolean
+        map: Map,
+        cameraPosition: CameraPosition,
+        cameraUpdateReson: CameraUpdateReason,
+        finished: Boolean
     ) {
-        TODO("Not yet implemented")
+        if (finished) {
+            sumbitQuery(binding.searchEdit.text.toString())
+        }
     }
 }
